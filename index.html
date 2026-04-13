@@ -80,7 +80,7 @@ let vidas = 3;
 let cargado = false;
 
 // CARGA DE DATOS
-fetch('flashcards.csv')
+fetch('./flashcards.csv')
   .then(r => r.text())
   .then(data => {
     preguntas = data.split('\n')
