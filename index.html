@@ -34,6 +34,11 @@
       cursor: pointer;
       margin: 10px;
       font-weight: bold;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #00a8d6;
     }
 
     .card {
@@ -43,6 +48,13 @@
       border-radius: 15px;
       margin: 20px 0;
       min-height: 80px;
+      font-size: 18px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
     }
 
     input {
@@ -50,12 +62,17 @@
       width: 80%;
       border-radius: 8px;
       border: none;
+      outline: none;
     }
 
     .top-bar {
       display: flex;
       justify-content: space-between;
       font-size: 14px;
+    }
+
+    #mensaje {
+      height: 20px;
     }
   </style>
 </head>
@@ -93,30 +110,41 @@
 let preguntas = [];
 let nivel = 0;
 let vidas = 3;
+let cargado = false;
 
+// Cargar CSV
 fetch('flashcards.csv')
   .then(r => r.text())
   .then(data => {
     preguntas = data.split('\n').map(l => {
       let partes = l.split(',');
-let p = partes[0];
-let r = partes.slice(1).join(','); // une todo lo demás
-return { p, r };      return { p, r };
+      let p = partes[0];
+      let r = partes.slice(1).join(',');
+      return { p, r };
     });
 
     preguntas = shuffle(preguntas);
+    cargado = true;
   });
 
+// Mezclar preguntas
 function shuffle(arr) {
   return arr.sort(() => Math.random() - 0.5);
 }
 
+// Iniciar juego
 function startGame() {
+  if (!cargado) {
+    alert("⏳ Esperá que carguen las preguntas...");
+    return;
+  }
+
   document.getElementById('menu').classList.remove('active');
   document.getElementById('game').classList.add('active');
   mostrar();
 }
 
+// Mostrar pregunta
 function mostrar() {
   if (nivel >= 6) return win();
   if (vidas <= 0) return lose();
@@ -124,7 +152,10 @@ function mostrar() {
   document.getElementById('nivel').innerText = `Nivel ${nivel+1}/6`;
   document.getElementById('vidas').innerText = `❤️ ${vidas}`;
   document.getElementById('pregunta').innerText = preguntas[nivel].p;
+  document.getElementById('mensaje').innerText = '';
 }
+
+// Normalizar texto
 function normalizar(texto) {
   return texto
     .toLowerCase()
@@ -134,7 +165,7 @@ function normalizar(texto) {
     .replace(/\r/g, "");
 }
 
-// Distancia de Levenshtein (errores tipo "pariz")
+// Distancia de Levenshtein
 function similitud(a, b) {
   const matrix = [];
 
@@ -159,6 +190,8 @@ function similitud(a, b) {
   let maxLen = Math.max(a.length, b.length);
   return 1 - distancia / maxLen;
 }
+
+// Verificar respuesta
 function verificar() {
   let user = normalizar(document.getElementById('respuesta').value);
 
@@ -169,9 +202,9 @@ function verificar() {
   let esCorrecto = respuestas.some(correct => {
     let score = similitud(user, correct);
     return (
-      user === correct ||        // exacto
-      user.includes(correct) || // parcial
-      score > 0.7               // parecido
+      user === correct ||
+      user.includes(correct) ||
+      score > 0.7
     );
   });
 
@@ -185,18 +218,23 @@ function verificar() {
 
   document.getElementById('respuesta').value = '';
   setTimeout(mostrar, 800);
-}function win() {
+}
+
+// Ganar
+function win() {
   document.getElementById('game').classList.remove('active');
   document.getElementById('final').classList.add('active');
   document.getElementById('resultado').innerText = '🎉 GANASTE';
 }
 
+// Perder
 function lose() {
   document.getElementById('game').classList.remove('active');
   document.getElementById('final').classList.add('active');
   document.getElementById('resultado').innerText = '💀 PERDISTE';
 }
 
+// Reiniciar
 function restart() {
   nivel = 0;
   vidas = 3;
@@ -207,6 +245,13 @@ function restart() {
 
   mostrar();
 }
+
+// Enter para responder
+document.getElementById('respuesta').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    verificar();
+  }
+});
 </script>
 
 </body>
