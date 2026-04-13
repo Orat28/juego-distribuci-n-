@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Flashcards PRO</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .screen {
+      display: none;
+      text-align: center;
+      width: 400px;
+    }
+
+    .active { display: block; }
+
+    h1 { margin-bottom: 20px; }
+
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      background: #00c6ff;
+      color: black;
+      cursor: pointer;
+      margin: 10px;
+      font-weight: bold;
+    }
+
+    .card {
+      background: white;
+      color: black;
+      padding: 20px;
+      border-radius: 15px;
+      margin: 20px 0;
+      min-height: 80px;
+    }
+
+    input {
+      padding: 10px;
+      width: 80%;
+      border-radius: 8px;
+      border: none;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- MENU -->
+<div id="menu" class="screen active">
+  <h1>🎮 Flashcards PRO</h1>
+  <button onclick="startGame()">Jugar</button>
+</div>
+
+<!-- GAME -->
+<div id="game" class="screen">
+  <div class="top-bar">
+    <span id="nivel"></span>
+    <span id="vidas"></span>
+  </div>
+
+  <div class="card" id="pregunta"></div>
+
+  <input type="text" id="respuesta" placeholder="Tu respuesta">
+  <br>
+  <button onclick="verificar()">Responder</button>
+
+  <p id="mensaje"></p>
+</div>
+
+<!-- FINAL -->
+<div id="final" class="screen">
+  <h1 id="resultado"></h1>
+  <button onclick="restart()">Reintentar</button>
+</div>
+
+<script>
+let preguntas = [];
+let nivel = 0;
+let vidas = 3;
+
+fetch('flashcards.csv')
+  .then(r => r.text())
+  .then(data => {
+    preguntas = data.split('\n').map(l => {
+      let [p, r] = l.split(',');
+      return { p, r };
+    });
+
+    preguntas = shuffle(preguntas);
+  });
+
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
+
+function startGame() {
+  document.getElementById('menu').classList.remove('active');
+  document.getElementById('game').classList.add('active');
+  mostrar();
+}
+
+function mostrar() {
+  if (nivel >= 6) return win();
+  if (vidas <= 0) return lose();
+
+  document.getElementById('nivel').innerText = `Nivel ${nivel+1}/6`;
+  document.getElementById('vidas').innerText = `❤️ ${vidas}`;
+  document.getElementById('pregunta').innerText = preguntas[nivel].p;
+}
+
+function verificar() {
+  let user = document.getElementById('respuesta').value.toLowerCase().trim();
+  let correct = preguntas[nivel].r.toLowerCase().trim();
+
+  if (user === correct) {
+    nivel++;
+    document.getElementById('mensaje').innerText = '✅ Correcto';
+  } else {
+    vidas--;
+    document.getElementById('mensaje').innerText = '❌ Incorrecto';
+  }
+
+  document.getElementById('respuesta').value = '';
+  setTimeout(mostrar, 800);
+}
+
+function win() {
+  document.getElementById('game').classList.remove('active');
+  document.getElementById('final').classList.add('active');
+  document.getElementById('resultado').innerText = '🎉 GANASTE';
+}
+
+function lose() {
+  document.getElementById('game').classList.remove('active');
+  document.getElementById('final').classList.add('active');
+  document.getElementById('resultado').innerText = '💀 PERDISTE';
+}
+
+function restart() {
+  nivel = 0;
+  vidas = 3;
+  preguntas = shuffle(preguntas);
+
+  document.getElementById('final').classList.remove('active');
+  document.getElementById('game').classList.add('active');
+
+  mostrar();
+}
+</script>
+
+</body>
+</html>
