@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Flashcards PRO</title>
+  <title>Flashcards PRO - Logística</title>
   <style>
     body {
       margin: 0;
@@ -14,17 +14,9 @@
       align-items: center;
       height: 100vh;
     }
-
-    .screen {
-      display: none;
-      text-align: center;
-      width: 400px;
-    }
-
+    .screen { display: none; text-align: center; width: 450px; }
     .active { display: block; }
-
     h1 { margin-bottom: 20px; }
-
     button {
       padding: 12px 20px;
       border: none;
@@ -36,71 +28,46 @@
       font-weight: bold;
       transition: 0.2s;
     }
-
-    button:hover {
-      background: #00a8d6;
-    }
-
+    button:hover { background: #00a8d6; }
     .card {
       background: white;
       color: black;
-      padding: 20px;
+      padding: 30px;
       border-radius: 15px;
       margin: 20px 0;
-      min-height: 80px;
+      min-height: 100px;
       font-size: 18px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      transition: transform 0.2s;
-    }
-
-    .card:hover {
-      transform: scale(1.05);
-    }
-
-    input {
-      padding: 10px;
-      width: 80%;
-      border-radius: 8px;
-      border: none;
-      outline: none;
-    }
-
-    .top-bar {
       display: flex;
-      justify-content: space-between;
-      font-size: 14px;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.4;
     }
-
-    #mensaje {
-      height: 20px;
-    }
+    input { padding: 10px; width: 80%; border-radius: 8px; border: none; outline: none; }
+    .top-bar { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; }
+    #mensaje { height: 20px; font-weight: bold; }
   </style>
 </head>
 <body>
 
-<!-- MENU -->
 <div id="menu" class="screen active">
-  <h1>🎮 Flashcards PRO</h1>
+  <h1>🎮 Flashcards Logística</h1>
+  <p id="status">Cargando preguntas...</p>
   <button onclick="startGame()">Jugar</button>
 </div>
 
-<!-- GAME -->
 <div id="game" class="screen">
   <div class="top-bar">
     <span id="nivel"></span>
     <span id="vidas"></span>
   </div>
-
   <div class="card" id="pregunta"></div>
-
   <input type="text" id="respuesta" placeholder="Tu respuesta">
   <br>
   <button onclick="verificar()">Responder</button>
-
   <p id="mensaje"></p>
 </div>
 
-<!-- FINAL -->
 <div id="final" class="screen">
   <h1 id="resultado"></h1>
   <button onclick="restart()">Reintentar</button>
@@ -112,159 +79,104 @@ let nivel = 0;
 let vidas = 3;
 let cargado = false;
 
-// Cargar CSV - Versión Robusta
+// CARGA DE DATOS
 fetch('flashcards.csv')
   .then(r => r.text())
   .then(data => {
     preguntas = data.split('\n')
-      .filter(linea => linea.trim() !== "") 
+      .filter(linea => linea.trim().includes(';'))
       .map(l => {
-        // Buscamos el ÚLTIMO punto y coma para separar respuesta de pregunta
-        let lastIndex = l.lastIndexOf(';'); 
-        
-        if (lastIndex === -1) return null; // Salta líneas mal formadas
-
-        let p = l.substring(0, lastIndex).trim();
-        let r = l.substring(lastIndex + 1).trim();
-
-        // Limpieza de comillas extras al principio y final
-        p = p.replace(/^["']|["']$/g, "");
-        r = r.replace(/^["']|["']$/g, "");
-
+        let lastIndex = l.lastIndexOf(';');
+        let p = l.substring(0, lastIndex).trim().replace(/^["']|["']$/g, "");
+        let r = l.substring(lastIndex + 1).trim().replace(/^["']|["']$/g, "");
         return { p, r };
-      })
-      .filter(item => item !== null); // Elimina errores
+      });
 
-    preguntas = shuffle(preguntas);
-    cargado = true;
+    if (preguntas.length > 0) {
+      preguntas = shuffle(preguntas);
+      cargado = true;
+      document.getElementById('status').innerText = "✅ Preguntas listas";
+    }
+  })
+  .catch(err => {
+    document.getElementById('status').innerText = "❌ Error al cargar CSV";
   });
 
-// Mezclar preguntas
-function shuffle(arr) {
-  return arr.sort(() => Math.random() - 0.5);
-}
+function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
 
-// Iniciar juego
 function startGame() {
-  if (!cargado) {
-    alert("⏳ Esperá que carguen las preguntas...");
-    return;
-  }
-
+  if (!cargado) return alert("Espera a que carguen las preguntas");
   document.getElementById('menu').classList.remove('active');
   document.getElementById('game').classList.add('active');
   mostrar();
 }
 
-// Mostrar pregunta
 function mostrar() {
-  if (nivel >= 6) return win();
+  if (nivel >= preguntas.length) return win();
   if (vidas <= 0) return lose();
-
-  document.getElementById('nivel').innerText = `Nivel ${nivel+1}/6`;
+  document.getElementById('nivel').innerText = `Pregunta ${nivel+1}/${preguntas.length}`;
   document.getElementById('vidas').innerText = `❤️ ${vidas}`;
   document.getElementById('pregunta').innerText = preguntas[nivel].p;
   document.getElementById('mensaje').innerText = '';
+  document.getElementById('respuesta').focus();
 }
 
-// Normalizar texto
-function normalizar(texto) {
-  return texto
-    .toLowerCase()
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\r/g, "");
+function normalizar(t) {
+  return t.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\r/g, "");
 }
 
-// Distancia de Levenshtein
 function similitud(a, b) {
-  const matrix = [];
-
-  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-
+  const m = [];
+  for (let i = 0; i <= b.length; i++) m[i] = [i];
+  for (let j = 0; j <= a.length; j++) m[0][j] = j;
   for (let i = 1; i <= b.length; i++) {
     for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
-        );
-      }
+      if (b.charAt(i - 1) === a.charAt(j - 1)) m[i][j] = m[i - 1][j - 1];
+      else m[i][j] = Math.min(m[i - 1][j - 1] + 1, m[i][j - 1] + 1, m[i - 1][j] + 1);
     }
   }
-
-  let distancia = matrix[b.length][a.length];
-  let maxLen = Math.max(a.length, b.length);
-  return 1 - distancia / maxLen;
+  return 1 - m[b.length][a.length] / Math.max(a.length, b.length);
 }
 
-// Verificar respuesta
 function verificar() {
   let user = normalizar(document.getElementById('respuesta').value);
-
-  let respuestas = preguntas[nivel].r
-    .split('|')
-    .map(r => normalizar(r));
-
-  let esCorrecto = respuestas.some(correct => {
-    let score = similitud(user, correct);
-    return (
-      user === correct ||
-      user.includes(correct) ||
-      score > 0.7
-    );
-  });
+  let correctas = preguntas[nivel].r.split('|').map(r => normalizar(r));
+  
+  let esCorrecto = correctas.some(c => user === c || user.includes(c) || similitud(user, c) > 0.7);
 
   if (esCorrecto) {
     nivel++;
-    document.getElementById('mensaje').innerText = '✅ Correcto';
+    document.getElementById('mensaje').style.color = "#00ff00";
+    document.getElementById('mensaje').innerText = '✅ ¡Bien!';
   } else {
     vidas--;
-    document.getElementById('mensaje').innerText = '❌ Incorrecto';
+    document.getElementById('mensaje').style.color = "#ff4d4d";
+    document.getElementById('mensaje').innerText = `❌ Era: ${preguntas[nivel].r}`;
   }
-
   document.getElementById('respuesta').value = '';
-  setTimeout(mostrar, 800);
+  setTimeout(mostrar, 1500);
 }
 
-// Ganar
 function win() {
   document.getElementById('game').classList.remove('active');
   document.getElementById('final').classList.add('active');
-  document.getElementById('resultado').innerText = '🎉 GANASTE';
+  document.getElementById('resultado').innerText = '🎉 ¡Completado!';
 }
 
-// Perder
 function lose() {
   document.getElementById('game').classList.remove('active');
   document.getElementById('final').classList.add('active');
-  document.getElementById('resultado').innerText = '💀 PERDISTE';
+  document.getElementById('resultado').innerText = '💀 Juego Terminado';
 }
 
-// Reiniciar
 function restart() {
-  nivel = 0;
-  vidas = 3;
-  preguntas = shuffle(preguntas);
-
+  nivel = 0; vidas = 3; preguntas = shuffle(preguntas);
   document.getElementById('final').classList.remove('active');
   document.getElementById('game').classList.add('active');
-
   mostrar();
 }
 
-// Enter para responder
-document.getElementById('respuesta').addEventListener('keypress', function(e) {
-  if (e.key === 'Enter') {
-    verificar();
-  }
-});
+document.getElementById('respuesta').addEventListener('keypress', (e) => { if (e.key === 'Enter') verificar(); });
 </script>
-
 </body>
 </html>
