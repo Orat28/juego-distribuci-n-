@@ -116,16 +116,19 @@ let cargado = false;
 fetch('flashcards.csv')
   .then(r => r.text())
   .then(data => {
-    preguntas = data.split('\n').map(l => {
-      let partes = l.split(',');
-      let p = partes[0];
-      let r = partes.slice(1).join(',');
-      return { p, r };
-    });
+    // Filtramos líneas vacías y separamos por punto y coma
+    preguntas = data.split('\n')
+      .filter(linea => linea.trim() !== "") 
+      .map(l => {
+        let partes = l.split(';'); // <--- CAMBIO AQUÍ
+        let p = partes[0];         // La pregunta
+        let r = partes[1] || "";   // La respuesta
+        return { p, r };
+      });
 
     preguntas = shuffle(preguntas);
     cargado = true;
-  });
+  });  });
 
 // Mezclar preguntas
 function shuffle(arr) {
