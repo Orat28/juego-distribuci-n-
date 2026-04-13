@@ -123,21 +123,57 @@ function mostrar() {
   document.getElementById('vidas').innerText = `❤️ ${vidas}`;
   document.getElementById('pregunta').innerText = preguntas[nivel].p;
 }
-
-function verificar() {
-  function normalizar(texto) {
+function normalizar(texto) {
   return texto
     .toLowerCase()
     .trim()
-    .normalize("NFD") // quita tildes
-    .replace(/[\u0300-\u036f]/g, "") // elimina acentos
-    .replace(/\r/g, ""); // elimina retornos raros
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\r/g, "");
 }
 
-let user = normalizar(document.getElementById('respuesta').value);
-let correct = normalizar(preguntas[nivel].r);
+// Distancia de Levenshtein (errores tipo "pariz")
+function similitud(a, b) {
+  const matrix = [];
 
-  if (user === correct) {
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+
+  let distancia = matrix[b.length][a.length];
+  let maxLen = Math.max(a.length, b.length);
+  return 1 - distancia / maxLen;
+}
+function verificar() {
+  let user = normalizar(document.getElementById('respuesta').value);
+
+  let respuestas = preguntas[nivel].r
+    .split('|')
+    .map(r => normalizar(r));
+
+  let esCorrecto = respuestas.some(correct => {
+    let score = similitud(user, correct);
+    return (
+      user === correct ||        // exacto
+      user.includes(correct) || // parcial
+      score > 0.7               // parecido
+    );
+  });
+
+  if (esCorrecto) {
     nivel++;
     document.getElementById('mensaje').innerText = '✅ Correcto';
   } else {
@@ -147,9 +183,7 @@ let correct = normalizar(preguntas[nivel].r);
 
   document.getElementById('respuesta').value = '';
   setTimeout(mostrar, 800);
-}
-
-function win() {
+}function win() {
   document.getElementById('game').classList.remove('active');
   document.getElementById('final').classList.add('active');
   document.getElementById('resultado').innerText = '🎉 GANASTE';
