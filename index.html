@@ -98,8 +98,10 @@ fetch('flashcards.csv')
   .then(r => r.text())
   .then(data => {
     preguntas = data.split('\n').map(l => {
-      let [p, r] = l.split(',');
-      return { p, r };
+      let partes = l.split(',');
+let p = partes[0];
+let r = partes.slice(1).join(','); // une todo lo demás
+return { p, r };      return { p, r };
     });
 
     preguntas = shuffle(preguntas);
