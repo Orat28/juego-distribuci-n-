@@ -112,23 +112,32 @@ let nivel = 0;
 let vidas = 3;
 let cargado = false;
 
-// Cargar CSV
+// Cargar CSV - Versión Robusta
 fetch('flashcards.csv')
   .then(r => r.text())
   .then(data => {
-    // Filtramos líneas vacías y separamos por punto y coma
     preguntas = data.split('\n')
       .filter(linea => linea.trim() !== "") 
       .map(l => {
-        let partes = l.split(';'); // <--- CAMBIO AQUÍ
-        let p = partes[0];         // La pregunta
-        let r = partes[1] || "";   // La respuesta
+        // Buscamos el ÚLTIMO punto y coma para separar respuesta de pregunta
+        let lastIndex = l.lastIndexOf(';'); 
+        
+        if (lastIndex === -1) return null; // Salta líneas mal formadas
+
+        let p = l.substring(0, lastIndex).trim();
+        let r = l.substring(lastIndex + 1).trim();
+
+        // Limpieza de comillas extras al principio y final
+        p = p.replace(/^["']|["']$/g, "");
+        r = r.replace(/^["']|["']$/g, "");
+
         return { p, r };
-      });
+      })
+      .filter(item => item !== null); // Elimina errores
 
     preguntas = shuffle(preguntas);
     cargado = true;
-  });  });
+  });
 
 // Mezclar preguntas
 function shuffle(arr) {
