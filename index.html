@@ -100,6 +100,7 @@ fetch('flashcards.csv')
   })
   .catch(err => {
     document.getElementById('status').innerText = "❌ Error al cargar CSV";
+    console.error(err);
   }); 
 
 function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
@@ -118,6 +119,7 @@ function mostrar() {
   document.getElementById('vidas').innerText = `❤️ ${vidas}`;
   document.getElementById('pregunta').innerText = preguntas[nivel].p;
   document.getElementById('mensaje').innerText = '';
+  document.getElementById('respuesta').value = '';
   document.getElementById('respuesta').focus();
 }
 
@@ -139,9 +141,12 @@ function similitud(a, b) {
 }
 
 function verificar() {
-  let user = normalizar(document.getElementById('respuesta').value);
-  let correctas = preguntas[nivel].r.split('|').map(r => normalizar(r));
+  let inputElement = document.getElementById('respuesta');
+  let user = normalizar(inputElement.value);
   
+  if (!user) return; // Evita que se envíen respuestas vacías
+
+  let correctas = preguntas[nivel].r.split('|').map(r => normalizar(r));
   let esCorrecto = correctas.some(c => user === c || user.includes(c) || similitud(user, c) > 0.7);
 
   if (esCorrecto) {
@@ -153,8 +158,13 @@ function verificar() {
     document.getElementById('mensaje').style.color = "#ff4d4d";
     document.getElementById('mensaje').innerText = `❌ Era: ${preguntas[nivel].r}`;
   }
-  document.getElementById('respuesta').value = '';
-  setTimeout(mostrar, 1500);
+  
+  // Bloqueamos el input un momento para que vean la respuesta
+  inputElement.disabled = true;
+  setTimeout(() => {
+    inputElement.disabled = false;
+    mostrar();
+  }, 1500);
 }
 
 function win() {
@@ -170,13 +180,17 @@ function lose() {
 }
 
 function restart() {
-  nivel = 0; vidas = 3; preguntas = shuffle(preguntas);
+  nivel = 0; 
+  vidas = 3; 
+  preguntas = shuffle(preguntas);
   document.getElementById('final').classList.remove('active');
   document.getElementById('game').classList.add('active');
   mostrar();
 }
 
-document.getElementById('respuesta').addEventListener('keypress', (e) => { if (e.key === 'Enter') verificar(); });
+document.getElementById('respuesta').addEventListener('keypress', (e) => { 
+  if (e.key === 'Enter') verificar(); 
+});
 </script>
 </body>
 </html>
